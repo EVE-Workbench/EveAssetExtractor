@@ -4,9 +4,6 @@ using System.IO;
 using System.Linq;
 
 var eveOnlineGameDirectory = @"c:\CCP\EVE";
-var resourceFile = $@"{eveOnlineGameDirectory}\tq\resfileindex.txt";
-var resourceFilePrefetch = $@"{eveOnlineGameDirectory}\tq\resfileindex_prefetch.txt";
-var eveOnlineResourceDirectory = $@"{eveOnlineGameDirectory}\ResFiles";
 var outputDirectory = @"c:\temp\export";
 
 foreach (var arg in args)
@@ -19,6 +16,10 @@ foreach (var arg in args)
         outputDirectory = arg.Replace("--output-dir=", "");
     }
 }
+
+var resourceFile = $@"{eveOnlineGameDirectory}\tq\resfileindex.txt";
+var resourceFilePrefetch = $@"{eveOnlineGameDirectory}\tq\resfileindex_prefetch.txt";
+var eveOnlineResourceDirectory = $@"{eveOnlineGameDirectory}\ResFiles";
 
 // create the output directory
 Directory.CreateDirectory(outputDirectory);
@@ -54,9 +55,7 @@ if (File.Exists(resourceFile) && File.Exists(resourceFilePrefetch))
 List<ResourceRow> ReadLines(string file)
 {
     var lines = File.ReadAllLines(file);
-    List<ResourceRow> rows = [];
-    rows.AddRange(lines.Select(line => line.Split(',')).Select(values => new ResourceRow { FileName = values[0], Path = values[1] }));
-    return rows;
+    return lines.Select(line => line.Split(',')).Select(values => new ResourceRow { FileName = values[0], Path = values[1] }).ToList();
 }
 
 string? GetMediaType(string fileName)
