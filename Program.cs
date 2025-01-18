@@ -35,7 +35,6 @@ if (File.Exists(resourceFile) && File.Exists(resourceFilePrefetch))
     rows.AddRange(ReadLines(resourceFile));
     rows.AddRange(ReadLines(resourceFilePrefetch));
     
-    // var filteredRows = rows.Where(x => x.FileName.Contains(".png")).ToList();
     foreach (var image in rows)
     {
         var mediaType = GetMediaType(image.FileName);
