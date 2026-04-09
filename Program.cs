@@ -29,11 +29,13 @@ if (eveOnlineGameDirectory == null)
     return;
 }
 
-var outputDirectory = ResolveOutputDirectory(providedOutputDirectory);
+if (!TryResolveInstallLayout(eveOnlineGameDirectory, out var resourceFile, out var resourceFilePrefetch, out var eveOnlineResourceDirectory))
+{
+    Console.WriteLine("Could not find required EVE resource indexes. Use --game-dir to set it explicitly.");
+    return;
+}
 
-var resourceFile = Path.Combine(eveOnlineGameDirectory, "tq", "resfileindex.txt");
-var resourceFilePrefetch = Path.Combine(eveOnlineGameDirectory, "tq", "resfileindex_prefetch.txt");
-var eveOnlineResourceDirectory = Path.Combine(eveOnlineGameDirectory, "ResFiles");
+var outputDirectory = ResolveOutputDirectory(providedOutputDirectory);
 
 // create the output directory
 Directory.CreateDirectory(outputDirectory);
@@ -45,31 +47,28 @@ Console.WriteLine($"Version: {Assembly.GetExecutingAssembly().GetName().Version}
 Console.WriteLine("Created by EVE Workbench");
 Console.WriteLine("---");
 
-if (File.Exists(resourceFile) && File.Exists(resourceFilePrefetch))
+// Read all lines from the CSV file
+rows.AddRange(ReadLines(resourceFile));
+rows.AddRange(ReadLines(resourceFilePrefetch));
+
+foreach (var image in rows)
 {
-    // Read all lines from the CSV file
-    rows.AddRange(ReadLines(resourceFile));
-    rows.AddRange(ReadLines(resourceFilePrefetch));
-    
-    foreach (var image in rows)
+    var mediaType = GetMediaType(image.FileName);
+    if (mediaType == null) continue;
+
+    var mediaOutputDirectory = Path.Combine(outputDirectory, mediaType);
+    Directory.CreateDirectory(mediaOutputDirectory);
+
+    var sourceFile = Path.Combine(eveOnlineResourceDirectory, image.Path.Replace('/', Path.DirectorySeparatorChar));
+    if (File.Exists(sourceFile))
     {
-        var mediaType = GetMediaType(image.FileName);
-        if (mediaType == null) continue;
-
-        var mediaOutputDirectory = Path.Combine(outputDirectory, mediaType);
-        Directory.CreateDirectory(mediaOutputDirectory);
-
-        var sourceFile = Path.Combine(eveOnlineResourceDirectory, image.Path.Replace('/', Path.DirectorySeparatorChar));
-        if (File.Exists(sourceFile))
-        {
-            var outputFileName = image.FileName
-                .Replace("res:/", string.Empty, StringComparison.OrdinalIgnoreCase)
-                .Replace("/", "_")
-                .Replace("\\", "_");
-            var outputFile = Path.Combine(mediaOutputDirectory, outputFileName);
-            File.Copy(sourceFile, outputFile, true);
-            Console.WriteLine($"Copies {sourceFile} to {outputFile}");
-        }
+        var outputFileName = image.FileName
+            .Replace("res:/", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("/", "_")
+            .Replace("\\", "_");
+        var outputFile = Path.Combine(mediaOutputDirectory, outputFileName);
+        File.Copy(sourceFile, outputFile, true);
+        Console.WriteLine($"Copies {sourceFile} to {outputFile}");
     }
 }
 
@@ -139,7 +138,10 @@ IEnumerable<string> GetCandidateGameDirectories()
     }
     else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
     {
-        // Need a mac first to determine this
+        candidates.Add(Path.Combine(home, "Library", "Application Support", "EVE Online", "SharedCache"));
+        candidates.Add(Path.Combine(home, "Library", "Application Support", "CCP", "EVE", "SharedCache"));
+        candidates.Add(Path.Combine(home, "Library", "Application Support", "Steam", "steamapps", "compatdata", "8500", "pfx", "drive_c", "CCP", "EVE"));
+        candidates.Add(Path.Combine(home, ".steam", "steam", "steamapps", "compatdata", "8500", "pfx", "drive_c", "CCP", "EVE"));
     }
     else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
     {
@@ -152,16 +154,49 @@ IEnumerable<string> GetCandidateGameDirectories()
 
 bool HasRequiredEveFiles(string gameDirectory)
 {
+    return TryResolveInstallLayout(gameDirectory, out _, out _, out _);
+}
+
+bool TryResolveInstallLayout(
+    string gameDirectory,
+    out string indexFile,
+    out string prefetchFile,
+    out string resFilesDirectory)
+{
+    indexFile = string.Empty;
+    prefetchFile = string.Empty;
+    resFilesDirectory = string.Empty;
+
     if (!Directory.Exists(gameDirectory))
     {
         return false;
     }
 
-    var indexFile = Path.Combine(gameDirectory, "tq", "resfileindex.txt");
-    var prefetchFile = Path.Combine(gameDirectory, "tq", "resfileindex_prefetch.txt");
-    var resFilesDirectory = Path.Combine(gameDirectory, "ResFiles");
+    resFilesDirectory = Path.Combine(gameDirectory, "ResFiles");
+    if (!Directory.Exists(resFilesDirectory))
+    {
+        return false;
+    }
 
-    return File.Exists(indexFile) && File.Exists(prefetchFile) && Directory.Exists(resFilesDirectory);
+    var standardIndex = Path.Combine(gameDirectory, "tq", "resfileindex.txt");
+    var standardPrefetch = Path.Combine(gameDirectory, "tq", "resfileindex_prefetch.txt");
+    if (File.Exists(standardIndex) && File.Exists(standardPrefetch))
+    {
+        indexFile = standardIndex;
+        prefetchFile = standardPrefetch;
+        return true;
+    }
+
+    var macIndex = Path.Combine(gameDirectory, "tq", "EVE.app", "Contents", "Resources", "build", "resfileindex.txt");
+    var macPrefetch = Path.Combine(gameDirectory, "tq", "EVE.app", "Contents", "Resources", "build", "resfileindex_prefetch.txt");
+    if (File.Exists(macIndex) && File.Exists(macPrefetch))
+    {
+        indexFile = macIndex;
+        prefetchFile = macPrefetch;
+        return true;
+    }
+
+    return false;
 }
 
 internal record ResourceRow
