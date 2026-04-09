@@ -47,14 +47,26 @@ Expected EVE directory layout:
 <game-dir>/ResFiles/...
 ```
 
+The tool also supports alternative index layouts (e.g., macOS app bundle):
+
+```text
+<game-dir>/tq/EVE.app/Contents/Resources/build/resfileindex.txt
+<game-dir>/tq/EVE.app/Contents/Resources/build/resfileindex_prefetch.txt
+<game-dir>/ResFiles/...
+```
+
 ## Auto-Detection Notes
-- Windows: tries `C:\CCP\EVE`.
-- Linux: tries common Steam Proton `compatdata/8500` paths.
-- macOS: no default path is currently implemented, so pass `--game-dir` explicitly.
+- **Windows**: tries `C:\CCP\EVE` on drives C, D, E.
+- **Linux**: tries common Steam Proton `compatdata/8500` paths under `~/.steam` and `~/.local/share/Steam`.
+- **macOS**: tries:
+  - `~/Library/Application Support/EVE Online/SharedCache`
+  - `~/Library/Application Support/CCP/EVE/SharedCache`
+  - `~/Library/Application Support/Steam/steamapps/compatdata/8500/pfx/drive_c/CCP/EVE`
+  - `~/.steam/steam/steamapps/compatdata/8500/pfx/drive_c/CCP/EVE`
 
 ## Compile
 Use .NET 10 to compile, then run:
 
 ```bash
-dotnet build
+dotnet run
 ```
