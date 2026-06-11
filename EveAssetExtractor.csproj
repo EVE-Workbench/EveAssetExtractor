@@ -2,11 +2,15 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <PublishSingleFile>true</PublishSingleFile>
         <SelfContained>false</SelfContained>
-        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-        <Version>1.0.1</Version>
+        <Version>1.1.0</Version>
+        <Authors>EVE Workbench</Authors>
+        <PackageProjectUrl>https://eveworkbench.com</PackageProjectUrl>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Content Include=".github\workflows\release.yml" />
+    </ItemGroup>
 </Project>
